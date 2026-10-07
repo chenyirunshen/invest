@@ -33,6 +33,36 @@
   <div class="foot">以上为基于公开信息的结构化分析，仅供自己决策参考，不构成投资建议。</div>
 </main>
 
+<!-- ================= 诊断 ================= -->
+<main class="page" id="page-diag">
+  <div class="sec-title">这个功能怎么用</div>
+  <div class="card" id="pf-howto"></div>
+
+  <div class="sec-title">持仓自测 · 填金额，立刻出结果</div>
+  <div class="card">
+    <div class="grid g2">
+      <div class="field"><label>债券 / 债基（元）</label><input type="number" id="pf-bond" value="0" inputmode="numeric"></div>
+      <div class="field"><label>纳斯达克 QDII / ETF（元）</label><input type="number" id="pf-nas" value="0" inputmode="numeric"></div>
+      <div class="field"><label>黄金 ETF / 积存金（元）</label><input type="number" id="pf-gold" value="0" inputmode="numeric"></div>
+      <div class="field"><label>现金 / 货币基金（元）</label><input type="number" id="pf-cash" value="0" inputmode="numeric"></div>
+      <div class="field"><label>其他（元）</label><input type="number" id="pf-other" value="0" inputmode="numeric"></div>
+      <div class="field"><label>月生活支出（元）</label><input type="number" id="pf-cost" value="5000" inputmode="numeric"></div>
+    </div>
+    <button class="btn" id="pf-run">诊断我的持仓</button>
+    <div id="pf-result"></div>
+    <div class="note" style="margin-top:10px">数据只存在你手机浏览器里，不会上传。填个大概就行，看的是<b>结构</b>不是精确到分。</div>
+  </div>
+
+  <div class="sec-title">小爪看到截图后会查这六项</div>
+  <div id="pf-dims"></div>
+
+  <div class="sec-title">诊断归档</div>
+  <div id="pf-reviews"></div>
+
+  <div class="sec-title">学习路径 · 接下来往哪走</div>
+  <div id="pf-learn"></div>
+</main>
+
 <!-- ================= 标的 ================= -->
 <main class="page" id="page-assets">
   <div class="sec-title">三大标的 · 逐个拆</div>
@@ -132,6 +162,7 @@
 
 <nav class="tabbar">
   <button class="on" data-page="home"><span class="ti">◎</span>今日</button>
+  <button data-page="diag"><span class="ti">⌘</span>诊断</button>
   <button data-page="assets"><span class="ti">◈</span>标的</button>
   <button data-page="framework"><span class="ti">✦</span>方法论</button>
   <button data-page="journal"><span class="ti">✎</span>迭代</button>
@@ -142,6 +173,7 @@
 <script src="data/assets.js"></script>
 <script src="data/framework.js"></script>
 <script src="data/journal.js"></script>
+<script src="data/portfolio.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

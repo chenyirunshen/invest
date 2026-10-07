@@ -279,7 +279,7 @@ input:focus, select:focus { outline: 2px solid var(--brand); outline-offset: -1p
 /* ---------- 底部导航 ---------- */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(6, 1fr);
   background: var(--bg);
   background: color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
@@ -288,7 +288,7 @@ input:focus, select:focus { outline: 2px solid var(--brand); outline-offset: -1p
 }
 .tabbar button {
   background: none; border: none; font-family: inherit; cursor: pointer;
-  padding: 4px 0; color: var(--text-3); font-size: 10.5px; display: flex;
+  padding: 4px 0; color: var(--text-3); font-size: 10px; display: flex;
   flex-direction: column; align-items: center; gap: 2px;
 }
 .tabbar button .ti { font-size: 18px; line-height: 1; }
@@ -306,6 +306,69 @@ input:focus, select:focus { outline: 2px solid var(--brand); outline-offset: -1p
 .hl { background: linear-gradient(transparent 62%, var(--brand-soft) 0); font-weight: 600; }
 .foot { text-align: center; font-size: 11px; color: var(--text-3); padding: 8px 20px 30px; line-height: 1.7; }
 svg.chart { display: block; width: 100%; height: auto; }
+
+/* ---------- 诊断页 ---------- */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+}
+.badge.pass { background: rgba(18, 161, 80, .12); color: var(--down); }
+.badge.warn { background: rgba(180, 83, 9, .14); color: var(--warn); }
+.badge.fail { background: rgba(217, 46, 46, .12); color: var(--up); }
+
+.struct { margin-bottom: 11px; }
+.struct .st-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 12.5px; margin-bottom: 4px;
+}
+.struct .st-head b { font-size: 13.5px; }
+.struct .st-bars { position: relative; height: 16px; }
+.struct .st-act {
+  height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin-bottom: 3px;
+}
+.struct .st-act > i { display: block; height: 100%; border-radius: 4px; }
+.struct .st-tgt { height: 4px; border-radius: 2px; background: var(--line); position: relative; }
+.struct .st-tgt > i {
+  position: absolute; top: -2px; width: 2px; height: 8px; background: var(--text); border-radius: 1px;
+}
+.struct .st-note { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+
+.dim-item {
+  padding: 11px 0; border-bottom: 1px dashed var(--line);
+}
+.dim-item:last-child { border-bottom: none; }
+.dim-t { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.dim-p { font-size: 12px; color: var(--down); margin-top: 4px; }
+.dim-w { font-size: 12.5px; color: var(--text-2); margin-top: 5px; line-height: 1.6; }
+.dim-w b { color: var(--text); }
+
+.stress-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 9px 0; border-bottom: 1px dashed var(--line); font-size: 13px;
+}
+.stress-row:last-child { border-bottom: none; }
+.stress-row .sr-l { flex: 1; }
+.stress-row .sr-l small { display: block; font-size: 11px; color: var(--text-3); }
+.stress-row .sr-r { text-align: right; }
+.stress-row .sr-r b { font-size: 16px; font-variant-numeric: tabular-nums; }
+
+.rebal { font-size: 13px; padding: 8px 0; border-bottom: 1px dashed var(--line); display: flex; justify-content: space-between; gap: 8px; }
+.rebal:last-child { border-bottom: none; }
+.rebal .rb-v { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.empty {
+  text-align: center; padding: 22px 12px; color: var(--text-3); font-size: 13px; line-height: 1.7;
+}
+.empty .e-icon { font-size: 30px; display: block; margin-bottom: 8px; opacity: .5; }
+
+.lv {
+  background: var(--card-2); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px; margin-bottom: 10px;
+}
+.lv-t { font-size: 13.5px; font-weight: 700; color: var(--brand); margin-bottom: 5px; }
+.lv-row { font-size: 12.5px; margin-bottom: 4px; }
+.lv-row b { color: var(--text); }
+.lv-book { font-size: 12px; color: var(--text-3); margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); }
 
 @media (min-width: 640px) {
   body { max-width: 560px; margin: 0 auto; box-shadow: 0 0 40px rgba(0,0,0,.05); min-height: 100vh; }
