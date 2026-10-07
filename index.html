@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#f6f5f2">
+<meta name="description" content="凡哥的投资指南 — 纳斯达克 / 黄金 / 债券 定投分析，基于何刚投资方法论，每日更新">
+<title>凡哥的投资指南</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-row">
+    <div class="title">凡哥的投资指南<small id="subtitle">加载中…</small></div>
+    <button class="icon-btn" id="themeBtn" title="切换主题">🌗</button>
+  </div>
+</header>
+
+<!-- ================= 今日 ================= -->
+<main class="page active" id="page-home">
+  <div id="home-signal"></div>
+
+  <div class="sec-title">宏观仪表盘</div>
+  <div class="grid g4" id="macro-grid"></div>
+
+  <div class="sec-title">今日观察</div>
+  <div id="today-box"></div>
+
+  <div class="sec-title">下一步</div>
+  <div class="card" id="action-box"></div>
+
+  <div class="foot">以上为基于公开信息的结构化分析，仅供自己决策参考，不构成投资建议。</div>
+</main>
+
+<!-- ================= 标的 ================= -->
+<main class="page" id="page-assets">
+  <div class="sec-title">三大标的 · 逐个拆</div>
+  <div id="asset-list"></div>
+
+  <div class="sec-title">目标配置</div>
+  <div class="card" id="alloc-box"></div>
+
+  <div class="sec-title">常见坑</div>
+  <div class="card" id="pitfall-box"></div>
+</main>
+
+<!-- ================= 方法论 ================= -->
+<main class="page" id="page-framework">
+  <div class="sec-title">底层世界观</div>
+  <div id="fw-gears"></div>
+  <div class="card" id="fw-quadrants"></div>
+
+  <div class="sec-title">决策总框架</div>
+  <div class="card" id="fw-fan"></div>
+
+  <div class="sec-title">选赛道 · 选标的</div>
+  <details class="acc" id="fw-industry"></details>
+  <details class="acc" id="fw-fund"></details>
+
+  <div class="sec-title">验真伪</div>
+  <details class="acc" id="fw-report"></details>
+
+  <div class="sec-title">量化工具</div>
+  <details class="acc" id="fw-score" open></details>
+
+  <div class="sec-title">大类资产</div>
+  <div class="card" id="fw-gold"></div>
+
+  <div class="sec-title">⚠️ 2026 框架修正</div>
+  <div id="fw-revision"></div>
+
+  <div class="sec-title">凡哥的定投纪律</div>
+  <div class="card" id="fw-discipline"></div>
+</main>
+
+<!-- ================= 日志 ================= -->
+<main class="page" id="page-journal">
+  <div class="sec-title">思想迭代日志 <span class="pill" id="jv"></span></div>
+  <div id="journal-box"></div>
+
+  <div class="sec-title">假设台账 · 写下判断，到期检验</div>
+  <div id="hyp-box">
+    <div class="note">这是「深耕」的骨架：每条判断都要写清<b>为什么</b>、<b>什么情况下算错</b>、<b>什么时候检验</b>。到期回来看，对了加分，错了更要记——<b>被证伪的判断才是真学到的东西。</b></div>
+  </div>
+
+  <div class="sec-title">认知升级 · 一句话</div>
+  <div class="card" id="lesson-box"></div>
+
+  <div class="sec-title">下一版要补什么</div>
+  <div class="card" id="todo-box"></div>
+</main>
+
+<!-- ================= 工具 ================= -->
+<main class="page" id="page-tools">
+  <div class="sec-title">定投计算器</div>
+  <div class="card">
+    <div class="field"><label>每月投入（元）</label><input type="number" id="c-monthly" value="2000" inputmode="numeric"></div>
+    <div class="field"><label>定投年限（年）</label><input type="number" id="c-years" value="10" inputmode="numeric"></div>
+    <div class="field"><label>预期年化收益率（%）</label><input type="number" id="c-rate" value="10" inputmode="decimal"></div>
+    <button class="btn" id="c-run">算一算</button>
+    <div class="result" id="c-result"></div>
+    <div class="note" style="margin-top:10px">公式：期末 = 月投 × [(1+r)<sup>n</sup> − 1] / r（r 为月利率，n 为月数）。<b>何刚的锚：年化 10–15% 已经非常优秀</b>，填 20% 以上就是自我欺骗了。</div>
+  </div>
+
+  <div class="sec-title">定投前检查清单</div>
+  <div class="card" id="check-box"></div>
+
+  <div class="sec-title">怎么维护这个站</div>
+  <div class="card">
+    <div class="fan">
+      <div class="fan-layer"><div class="fl-t">每天（2 分钟）</div><div class="fl-c">改 <code>data/market.js</code>：更新 <code>macro</code> 八个指标 + 在 <code>days</code> 最前面加一条今日观察。</div></div>
+      <div class="fan-layer"><div class="fl-t">每周日（10 分钟）</div><div class="fl-c">更新 <code>MARKET.assets</code> 里三个标的的信号灯颜色与 verdict 一句话。</div></div>
+      <div class="fan-layer"><div class="fl-t">每次认知升级</div><div class="fl-c">在 <code>data/journal.js</code> 的 <code>journal</code> 最前面加一条，版本号 +1；有新判断就往 <code>hypotheses</code> 里加。</div></div>
+      <div class="fan-layer"><div class="fl-t">每季度</div><div class="fl-c">回看假设台账，把到期的标记为「成立 / 证伪」，并写清学到了什么。</div></div>
+    </div>
+    <div class="note" style="margin-top:10px">全部是静态文件，改完 push 到 GitHub 就生效。手机上收藏链接，随时看。</div>
+  </div>
+
+  <div class="sec-title">数据来源</div>
+  <div class="card">
+    <ul class="list neutral">
+      <li>美股 / 贵金属行情：新华社、东方财富 Choice、新浪财经（10/6 收盘）</li>
+      <li>美联储 / 美国宏观：FOMC 9月议息决议与点阵图、BLS、FRED（10Y 美债 5.29% @ 9/30）</li>
+      <li>黄金供需：世界黄金协会《2026 二季度全球黄金需求趋势报告》、欧洲央行储备报告</li>
+      <li>机构目标价：高盛 / 瑞银 / 汇丰 / 德银 / 摩根士丹利 / 花旗（2026 年 10 月初口径）</li>
+      <li>境内 QDII：财新、Wind、天天基金（限购与溢价数据，2026 年 8–9 月口径）</li>
+      <li>国内债市：中国银河证券、同花顺、中证指数（9 月数据）</li>
+    </ul>
+  </div>
+</main>
+
+<nav class="tabbar">
+  <button class="on" data-page="home"><span class="ti">◎</span>今日</button>
+  <button data-page="assets"><span class="ti">◈</span>标的</button>
+  <button data-page="framework"><span class="ti">✦</span>方法论</button>
+  <button data-page="journal"><span class="ti">✎</span>迭代</button>
+  <button data-page="tools"><span class="ti">⚒</span>工具</button>
+</nav>
+
+<script src="data/market.js"></script>
+<script src="data/assets.js"></script>
+<script src="data/framework.js"></script>
+<script src="data/journal.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
