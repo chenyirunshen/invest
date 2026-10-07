@@ -3,7 +3,8 @@
   "use strict";
   var $ = function (s) { return document.querySelector(s); };
   var esc = function (s) { return String(s); };
-  var LAST = null; /* 最近一次诊断结果（诊断页与上传页共享） */
+  var LAST = null;  /* 最近一次诊断结果（诊断页与上传页共享） */
+  var DBAPI = null; /* IndexedDB 接口，由上传模块填充后供 AI 模块复用 */
 
   /* ---------- 主题 ---------- */
   var theme = localStorage.getItem("fg-theme") || "light";
@@ -616,6 +617,8 @@
         list = (list || []).sort(function (a, b) { return b.id - a.id; });
         tip.style.display = list.length ? "none" : "block";
         copyBtn.style.display = list.length ? "block" : "none";
+        var aiB = $("#pf-ai");
+        if (aiB) aiB.style.display = list.length ? "block" : "none";
         grid.innerHTML = list.map(function (s) {
           return '<div class="shot" data-id="' + s.id + '">' +
             '<button class="s-del" data-del="' + s.id + '" aria-label="删除">✕</button>' +
@@ -777,6 +780,16 @@
       if (res && res.scrollIntoView) setTimeout(function () { res.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60);
     };
 
+    DBAPI = {
+      all: all, put: put, del: del,
+      allRep: allRep, putRep: putRep, delRep: delRep,
+      latestShot: function () {
+        return all().then(function (l) {
+          l = (l || []).sort(function (a, b) { return b.id - a.id; });
+          return l[0] || null;
+        });
+      }
+    };
     renderReports();
 
     /* ---- 首页醒目入口 ---- */
@@ -805,6 +818,211 @@
     cta.onkeydown = function (e) {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goDiag(); }
     };
+
+    /* ================= AI 读图分析 ================= */
+    (function () {
+      var PRESET = {
+        zhipu: { url: "https://open.bigmodel.cn/api/paas/v4/chat/completions", model: "glm-4v-flash" },
+        qwen: { url: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", model: "qwen-vl-max-latest" },
+        openai: { url: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini" },
+        custom: { url: "", model: "" }
+      };
+      var LSKEY = "fg-llm";
+      var sel = $("#llm-provider"), keyI = $("#llm-key"), urlI = $("#llm-url"),
+        modI = $("#llm-model"), st = $("#llm-status"), saveB = $("#llm-save"),
+        aiB = $("#pf-ai"), aiR = $("#pf-ai-result"), cfgBox = $("#pf-llm-cfg");
+
+      function loadCfg() { try { return JSON.parse(localStorage.getItem(LSKEY) || "{}"); } catch (e) { return {}; } }
+      function cfgNow() {
+        return {
+          provider: sel.value,
+          key: (keyI.value || "").trim(),
+          url: (urlI.value || "").trim(),
+          model: (modI.value || "").trim()
+        };
+      }
+      function fillPreset(force) {
+        var p = PRESET[sel.value] || PRESET.custom;
+        if (force || !urlI.value) urlI.value = p.url;
+        if (force || !modI.value) modI.value = p.model;
+      }
+      sel.onchange = function () { fillPreset(true); };
+
+      var saved = loadCfg();
+      if (saved.provider) sel.value = saved.provider;
+      if (saved.key) keyI.value = saved.key;
+      if (saved.url) urlI.value = saved.url;
+      if (saved.model) modI.value = saved.model;
+      if (!urlI.value) fillPreset(true);
+
+      function callLLM(messages, c, maxTok) {
+        return fetch(c.url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + c.key },
+          body: JSON.stringify({ model: c.model, messages: messages, temperature: 0.2, max_tokens: maxTok || 1500 })
+        }).then(function (r) {
+          return r.text().then(function (t) {
+            if (!r.ok) {
+              var m = "";
+              try { var j = JSON.parse(t); m = (j.error && (j.error.message || j.error.code)) || ""; } catch (e) { }
+              throw new Error("HTTP " + r.status + (m ? " · " + m : " · " + t.slice(0, 120)));
+            }
+            return t;
+          });
+        }).then(function (t) {
+          var j = JSON.parse(t);
+          var c2 = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+          if (typeof c2 === "string") return c2;
+          if (Array.isArray(c2)) return c2.map(function (x) { return x.text || ""; }).join("");
+          return String(c2 || "");
+        });
+      }
+
+      function extractJSON(s) {
+        s = String(s).trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+        var i = s.indexOf("{"), j = s.lastIndexOf("}");
+        if (i >= 0 && j > i) s = s.slice(i, j + 1);
+        return JSON.parse(s);
+      }
+      function num(x) {
+        if (typeof x === "number") return x;
+        if (!x) return 0;
+        var n = parseFloat(String(x).replace(/[^0-9.\-]/g, ""));
+        return isNaN(n) ? 0 : n;
+      }
+
+      var P1 = "你是投资组合分析助手。仔细识别这张持仓/账户截图里的每一个条目。\n" +
+        "只输出一个 JSON 对象，不要解释，不要 markdown 代码块。格式：\n" +
+        '{"currency":"CNY","total":数字,"items":[{"name":"名称","code":"代码或空","value":市值数字,' +
+        '"cost":成本或null,"profit":盈亏或null,"type":"bond|nasdaq|gold|cash|other","confidence":0到1}],' +
+        '"note":"其他可见信息：日期、定投计划、收益率、溢价率、持仓天数等"}\n' +
+        "type 归类：bond=债券基金/纯债/中短债/同业存单/国债/货币基金；nasdaq=纳斯达克100/纳指/标普500/QDII美股指数；" +
+        "gold=黄金ETF/黄金基金/积存金；cash=余额/现金/活钱；other=A股/主动基金/其他/无法判断。\n" +
+        "数字只保留数值，去掉 ¥ $ , % 等符号；没有的字段填 null。看不清就如实降低 confidence。";
+
+      function envBrief() {
+        try {
+          return MARKET.macro.map(function (m) { return m.label + " " + m.value; }).join("；");
+        } catch (e) { return ""; }
+      }
+
+      function setV(id, v) { var e = $(id); if (e && v != null) e.value = Math.round(v); }
+
+      function runAI() {
+        var c = cfgNow();
+        if (!c.key || !c.url || !c.model) {
+          if (cfgBox) cfgBox.open = true;
+          if (cfgBox && cfgBox.scrollIntoView) cfgBox.scrollIntoView({ behavior: "smooth", block: "center" });
+          aiR.innerHTML = '<div class="note">先在下面的「大模型设置」里填一次 API Key，之后点这个按钮就全自动了。</div>';
+          return;
+        }
+        localStorage.setItem(LSKEY, JSON.stringify(c));
+        aiB.disabled = true;
+        aiR.innerHTML = '<div class="note">🤖 正在读取截图并识别…（约 10–30 秒）</div>';
+
+        DBAPI.latestShot().then(function (shot) {
+          if (!shot) throw new Error("还没有截图，先上传一张");
+          return callLLM([{
+            role: "user",
+            content: [
+              { type: "image_url", image_url: { url: shot.data } },
+              { type: "text", text: P1 }
+            ]
+          }], c, 1500).then(function (raw) {
+            var d = extractJSON(raw);
+            var items = Array.isArray(d.items) ? d.items : [];
+            var bucket = { bond: 0, nas: 0, gold: 0, cash: 0, other: 0 };
+            items.forEach(function (it) {
+              var t = it.type || "other";
+              if (t === "nasdaq") t = "nas";
+              if (!(t in bucket)) t = "other";
+              bucket[t] += num(it.value);
+            });
+            setV("#pf-bond", bucket.bond);
+            setV("#pf-nas", bucket.nas);
+            setV("#pf-gold", bucket.gold);
+            setV("#pf-cash", bucket.cash);
+            setV("#pf-other", bucket.other);
+
+            var rows = items.map(function (it) {
+              var tn = { bond: "债券", nasdaq: "纳指", gold: "黄金", cash: "现金", other: "其他" }[it.type] || "其他";
+              return "<tr><td>" + esc(it.name || "—") + "<div style='font-size:10.5px;color:var(--text-3)'>" +
+                esc(it.code || "") + "</div></td><td>" + tn + "</td><td class='num'>" +
+                fmt3(num(it.value)) + "</td><td class='num'>" +
+                (it.profit == null ? "—" : (num(it.profit) >= 0 ? "+" : "") + fmt3(num(it.profit))) + "</td></tr>";
+            }).join("");
+
+            aiR.innerHTML = '<div class="card"><div style="font-size:13.5px;font-weight:700;margin-bottom:6px">🤖 AI 识别结果</div>' +
+              (items.length ? '<table class="tbl"><tr><th>标的</th><th>归类</th><th>市值</th><th>盈亏</th></tr>' + rows + '</table>'
+                : '<div style="font-size:12.5px;color:var(--text-3)">没识别出条目，可以手动填下面的金额。</div>') +
+              (d.note ? '<div class="note" style="margin-top:8px">图上其他信息：' + esc(d.note) + '</div>' : '') +
+              '<div class="note" style="margin-top:8px">金额已自动填入下方表单。<b>识别可能有误差，核对一下再往下走。</b></div></div>' +
+              '<div id="pf-ai-advice" class="note">⏳ 正在生成诊断意见…</div>';
+
+            $("#pf-run").click();
+
+            if (!LAST) return;
+            var brief = "总资产约 " + fmt3(LAST.total) + "；核心/卫星 " +
+              LAST.core.toFixed(1) + "%/" + (100 - LAST.core).toFixed(1) + "%；纳指/黄金/债券/现金占比见体检。";
+            var P2 = "你是严谨的投资分析助手，用「政策面→宏观面→基本面」的自上而下框架。\n" +
+              "用户是境内投资者，做长期定投，标的为纳斯达克、黄金、债券。\n" +
+              "持仓：" + brief + "\n" +
+              "六项体检结果：" + LAST.text.split("— 压力测试 —")[0].split("— 六项体检 —")[1] + "\n" +
+              "当前市场环境：" + envBrief() + "\n" +
+              "请输出（中文，300 字以内，条理清晰）：\n" +
+              "1. 一句话综合判断\n2. 最该调整的 2 个问题（具体到比例或金额）\n" +
+              "3. 未来 6–12 个月要盯的 3 个信号\n4. 下一步的一个具体动作\n" +
+              "不给买卖指令、不承诺收益。结尾写「（非投资建议）」。";
+
+            return callLLM([{ role: "user", content: P2 }], c, 900).then(function (adv) {
+              var box = $("#pf-ai-advice");
+              if (box) {
+                box.className = "card";
+                box.style.borderLeft = "3px solid #5b4bd6";
+                box.innerHTML = '<div style="font-size:13px;font-weight:700;color:#5b4bd6;margin-bottom:6px">🤖 AI 诊断意见</div>' +
+                  '<div style="font-size:13px;line-height:1.75;white-space:pre-wrap">' + esc(adv) + '</div>';
+              }
+            }).catch(function (e) {
+              var box = $("#pf-ai-advice");
+              if (box) box.innerHTML = '<div class="note">诊断意见生成失败（' + esc(e.message.slice(0, 120)) + '），规则引擎的报告已在下方。</div>';
+            });
+          });
+        }).catch(function (e) {
+          var msg = e.message || String(e);
+          if (/Failed to fetch|NetworkError|TypeError/.test(msg)) {
+            msg = "网络或跨域失败（CORS）。该服务商可能不允许浏览器直连——换智谱 / 通义 / OpenAI 之一，或填自定义代理地址。";
+          }
+          aiR.innerHTML = '<div class="card"><span class="badge fail">识别失败</span>' +
+            '<div style="font-size:12.5px;margin-top:6px;line-height:1.6">' + esc(msg) + '</div></div>';
+        }).then(function () {
+          aiB.disabled = false;
+        });
+      }
+
+      function fmt3(x) { return "¥" + Math.round(x).toLocaleString("zh-CN"); }
+
+      saveB.onclick = function () {
+        var c = cfgNow();
+        if (!c.key || !c.url || !c.model) {
+          st.innerHTML = '<span class="badge fail">Key / 地址 / 模型名都要填</span>';
+          return;
+        }
+        localStorage.setItem(LSKEY, JSON.stringify(c));
+        st.innerHTML = "正在测试…";
+        callLLM([{ role: "user", content: "回复两个字：正常" }], c, 20).then(function (r) {
+          st.innerHTML = '<span class="badge pass">连接成功</span> <span style="font-size:12px;color:var(--text-3)">返回：' +
+            esc(String(r).slice(0, 30)) + '</span>';
+        }).catch(function (e) {
+          var m = e.message || String(e);
+          if (/Failed to fetch|NetworkError|TypeError/.test(m)) {
+            m = "跨域或网络失败：该服务商不允许浏览器直连，换智谱 / 通义 / OpenAI，或填自定义代理地址。";
+          }
+          st.innerHTML = '<span class="badge fail">失败</span> <span style="font-size:12px">' + esc(m.slice(0, 160)) + '</span>';
+        });
+      };
+
+      aiB.onclick = runAI;
+    })();
 
     copyBtn.onclick = function () {
       var g = function (id) { return parseFloat($(id).value) || 0; };
