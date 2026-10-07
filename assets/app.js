@@ -3,6 +3,7 @@
   "use strict";
   var $ = function (s) { return document.querySelector(s); };
   var esc = function (s) { return String(s); };
+  var LAST = null; /* 最近一次诊断结果（诊断页与上传页共享） */
 
   /* ---------- 主题 ---------- */
   var theme = localStorage.getItem("fg-theme") || "light";
@@ -453,30 +454,59 @@
       }).join("");
 
       /* 压力测试 */
-      var stressHtml = P.stress.map(function (s) {
+      var stressRows = P.stress.map(function (s) {
         var t2 = v.nas * (1 + s.n / 100) + v.gold * (1 + s.g / 100) + v.bond * (1 + s.b / 100) +
           v.cash + v.other * (1 + s.n / 100);
         var d = t2 - total, dp = (d / total) * 100;
+        return { name: s.name, desc: s.desc, n: s.n, g: s.g, b: s.b, d: d, dp: dp, t2: t2 };
+      });
+      var stressHtml = stressRows.map(function (s) {
         return '<div class="stress-row"><div class="sr-l">' + s.name +
           '<small>' + s.desc + '：纳指 ' + s.n + '% · 黄金 ' + s.g + '% · 债券 +' + s.b + '%</small></div>' +
-          '<div class="sr-r"><b class="' + (d < 0 ? "down" : "up") + '">' + dp.toFixed(1) + '%</b>' +
-          '<div style="font-size:11px;color:var(--text-3)">' + fmt(d) + ' → ' + fmt(t2) + '</div></div></div>';
+          '<div class="sr-r"><b class="' + (s.d < 0 ? "down" : "up") + '">' + s.dp.toFixed(1) + '%</b>' +
+          '<div style="font-size:11px;color:var(--text-3)">' + fmt(s.d) + ' → ' + fmt(s.t2) + '</div></div></div>';
       }).join("");
 
       /* 再平衡建议 */
-      var rebalHtml = ORDER.filter(function (k) { return v[k] > 0 || TGT[k] > 0; }).map(function (k) {
+      var rebalRows = ORDER.filter(function (k) { return v[k] > 0 || TGT[k] > 0; }).map(function (k) {
         var aim = total * TGT[k] / 100;
         var diff = aim - v[k];
         if (Math.abs(diff) < total * 0.02) {
-          return '<div class="rebal"><span>' + META[k].n + '</span><span class="rb-v" style="color:var(--text-3)">持平，不动</span></div>';
+          return { k: k, name: META[k].n, flat: true, diff: 0 };
         }
-        var act = diff > 0 ? "加仓 " + fmt(diff) : "减仓 " + fmt(-diff);
-        return '<div class="rebal"><span>' + META[k].n + '<span style="font-size:11px;color:var(--text-3)"> ' +
-          pct[k].toFixed(1) + '% → ' + TGT[k] + '%</span></span>' +
-          '<span class="rb-v ' + (diff > 0 ? "up" : "down") + '">' + act + '</span></div>';
+        return { k: k, name: META[k].n, flat: false, diff: diff, from: pct[k], to: TGT[k] };
+      });
+      var rebalHtml = rebalRows.map(function (r) {
+        if (r.flat) return '<div class="rebal"><span>' + r.name + '</span><span class="rb-v" style="color:var(--text-3)">持平，不动</span></div>';
+        var act = r.diff > 0 ? "加仓 " + fmt(r.diff) : "减仓 " + fmt(-r.diff);
+        return '<div class="rebal"><span>' + r.name + '<span style="font-size:11px;color:var(--text-3)"> ' +
+          r.from.toFixed(1) + '% → ' + r.to + '%</span></span>' +
+          '<span class="rb-v ' + (r.diff > 0 ? "up" : "down") + '">' + act + '</span></div>';
       }).join("");
 
-      $("#pf-result").innerHTML =
+      /* 纯文本版（用于存档与复制） */
+      var strip = function (s) { return String(s).replace(/<[^>]+>/g, ""); };
+      var LV = { pass: "达标", warn: "注意", fail: "需调整" };
+      var txt = "【持仓诊断报告】" + new Date().toLocaleDateString("zh-CN") + "\n" +
+        "总资产 " + fmt(total) + " ｜ 核心/卫星 " + core.toFixed(1) + "% / " + (100 - core).toFixed(1) + "%" +
+        " ｜ 现金垫 " + (cost > 0 ? months.toFixed(1) + " 个月" : "未填") + "\n" +
+        "综合判断：" + overallTxt + "\n\n" +
+        "— 六项体检 —\n" +
+        checks.map(function (c, i) {
+          return (i + 1) + ". " + strip(c.name) + "：" + LV[c.level] + "（" + c.now + "）\n   " + strip(c.advice);
+        }).join("\n") + "\n\n" +
+        "— 压力测试 —\n" +
+        stressRows.map(function (s) {
+          return "· " + s.name + "：" + (s.dp >= 0 ? "+" : "") + s.dp.toFixed(1) + "%（" + fmt(s.d) + "）";
+        }).join("\n") + "\n\n" +
+        "— 再平衡建议 —\n" +
+        rebalRows.map(function (r) {
+          return r.flat ? "· " + r.name + "：持平，不动"
+            : "· " + r.name + "：" + (r.diff > 0 ? "加仓 " + fmt(r.diff) : "减仓 " + fmt(-r.diff));
+        }).join("\n") + "\n\n" +
+        "（本报告由站点规则引擎基于公开配置纪律生成，非投资建议）";
+
+      var html =
         '<div class="result" style="margin-top:14px">' +
         '<div class="r-line"><span>总资产</span><b>' + fmt(total) + '</b></div>' +
         '<div class="r-line"><span>核心 / 卫星</span><b>' + core.toFixed(1) + '% / ' + (100 - core).toFixed(1) + '%</b></div>' +
@@ -497,6 +527,13 @@
         '<div class="sec-title" style="margin:18px 0 8px">再平衡建议（偏离 ±5% 才动手）</div>' +
         '<div class="card">' + rebalHtml +
         '<div class="note" style="margin-top:10px">建议<b>用新增资金补低配的那一项</b>，而不是卖出超配的那一项——少一次交易，少一次费用和情绪波动。每季度只做一次。</div></div>';
+
+      LAST = {
+        html: html, text: txt, total: total, core: core, months: months,
+        overall: overall, overallTxt: overallTxt,
+        shots: document.querySelectorAll("#pf-shot-grid .shot").length
+      };
+      $("#pf-result").innerHTML = html;
     }
 
     $("#pf-run").onclick = run;
@@ -510,11 +547,14 @@
     function openDB() {
       return new Promise(function (res, rej) {
         if (DB) return res(DB);
-        var rq = indexedDB.open("fange-invest", 1);
+        var rq = indexedDB.open("fange-invest", 2);
         rq.onupgradeneeded = function (e) {
           var db = e.target.result;
           if (!db.objectStoreNames.contains("shots")) {
             db.createObjectStore("shots", { keyPath: "id", autoIncrement: true });
+          }
+          if (!db.objectStoreNames.contains("reports")) {
+            db.createObjectStore("reports", { keyPath: "id", autoIncrement: true });
           }
         };
         rq.onsuccess = function (e) { DB = e.target.result; res(DB); };
@@ -522,11 +562,11 @@
       });
     }
 
-    function tx(mode, fn) {
+    function tx(name, mode, fn) {
       return openDB().then(function (db) {
         return new Promise(function (res, rej) {
-          var t = db.transaction("shots", mode);
-          var st = t.objectStore("shots");
+          var t = db.transaction(name, mode);
+          var st = t.objectStore(name);
           var out = fn(st);
           t.oncomplete = function () { res(out && out.result !== undefined ? out.result : out); };
           t.onerror = function (e) { rej(e.target.error); };
@@ -534,9 +574,12 @@
       });
     }
 
-    var all = function () { return tx("readonly", function (s) { return s.getAll(); }); };
-    var put = function (o) { return tx("readwrite", function (s) { return s.add(o); }); };
-    var del = function (id) { return tx("readwrite", function (s) { return s.delete(id); }); };
+    var all = function () { return tx("shots", "readonly", function (s) { return s.getAll(); }); };
+    var put = function (o) { return tx("shots", "readwrite", function (s) { return s.add(o); }); };
+    var del = function (id) { return tx("shots", "readwrite", function (s) { return s.delete(id); }); };
+    var allRep = function () { return tx("reports", "readonly", function (s) { return s.getAll(); }); };
+    var putRep = function (o) { return tx("reports", "readwrite", function (s) { return s.add(o); }); };
+    var delRep = function (id) { return tx("reports", "readwrite", function (s) { return s.delete(id); }); };
 
     function compress(file) {
       return new Promise(function (res, rej) {
@@ -640,6 +683,101 @@
     $("#pf-file").onchange = function (e) {
       handleFiles(Array.prototype.slice.call(e.target.files || []));
     };
+
+    /* ---- 生成诊断报告 ---- */
+    var fmt2 = function (x) {
+      return "¥" + Math.abs(Math.round(x)).toLocaleString("zh-CN");
+    };
+
+    function renderReports() {
+      allRep().then(function (list) {
+        list = (list || []).sort(function (a, b) { return b.id - a.id; });
+        var box = $("#pf-reports");
+        if (!box) return;
+        if (!list.length) {
+          box.innerHTML = '<div class="card"><div class="empty"><span class="e-icon">🔍</span>' +
+            '还没有生成过报告<br><span style="font-size:12px">填好下面的持仓金额，点「🔍 分析我的持仓」</span></div></div>';
+          return;
+        }
+        var LV = { pass: "达标", warn: "注意", fail: "需调整" };
+        box.innerHTML = list.map(function (r) {
+          return '<div class="card" data-repid="' + r.id + '">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+            '<div style="min-width:0"><div style="font-size:14px;font-weight:700">' + fmt2(r.total) + '</div>' +
+            '<div style="font-size:11.5px;color:var(--text-3);margin-top:2px">' + r.date +
+            ' · 核心 ' + r.core.toFixed(1) + '%' + (r.shots ? ' · 附 ' + r.shots + ' 张截图' : '') + '</div></div>' +
+            '<span class="badge ' + r.overall + '">' + LV[r.overall] + '</span></div>' +
+            '<div style="font-size:12.5px;color:var(--text-2);margin-top:5px">' + r.overallTxt + '</div>' +
+            '<details style="margin-top:8px"><summary style="font-size:12.5px;color:var(--brand);cursor:pointer;font-weight:600">展开完整报告</summary>' +
+            '<pre class="rep-text">' + String(r.text).replace(/&/g, "&amp;").replace(/</g, "&lt;") + '</pre>' +
+            '<button class="rep-copy" data-copy="' + r.id + '">复制全文</button></details>' +
+            '<button class="rep-del" data-repdel="' + r.id + '">删除这份</button>' +
+            '</div>';
+        }).join("");
+        Array.prototype.forEach.call(box.querySelectorAll("[data-repdel]"), function (b) {
+          b.onclick = function () { delRep(+b.dataset.repdel).then(renderReports); };
+        });
+        Array.prototype.forEach.call(box.querySelectorAll("[data-copy]"), function (b) {
+          b.onclick = function () {
+            var id = +b.dataset.copy;
+            var hit = list.filter(function (x) { return x.id === id; })[0];
+            if (!hit) return;
+            copyText(hit.text, b);
+          };
+        });
+      }).catch(function (e) {
+        var box = $("#pf-reports");
+        if (box) box.innerHTML = '<div class="card"><div class="empty">报告存储不可用：' + e.message + '</div></div>';
+      });
+    }
+
+    function copyText(txt, btn) {
+      var done = function () {
+        if (!btn) return;
+        var old = btn.textContent;
+        btn.textContent = "已复制 ✓";
+        setTimeout(function () { btn.textContent = old; }, 2200);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(done).catch(function () { legacy(); });
+      } else { legacy(); }
+      function legacy() {
+        var ta = document.createElement("textarea");
+        ta.value = txt;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); done(); } catch (e) { if (btn) btn.textContent = "复制失败"; }
+        document.body.removeChild(ta);
+      }
+    }
+
+    $("#pf-analyze").onclick = function () {
+      var g = function (id) { return parseFloat($(id).value) || 0; };
+      var tot = g("#pf-bond") + g("#pf-nas") + g("#pf-gold") + g("#pf-cash") + g("#pf-other");
+      if (tot <= 0) {
+        var t = $("#pf-shot-tip");
+        if (t) {
+          t.textContent = "先在下面「持仓自测」填各标的市值（大概就行），我才知道该怎么分析。";
+          t.style.display = "block";
+        }
+        var b = $("#pf-bond");
+        if (b && b.scrollIntoView) b.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (b && b.focus) b.focus();
+        return;
+      }
+      $("#pf-run").click();
+      if (!LAST) return;
+      putRep({
+        date: today(), total: LAST.total, core: LAST.core, months: LAST.months,
+        overall: LAST.overall, overallTxt: LAST.overallTxt, shots: LAST.shots, text: LAST.text
+      }).then(renderReports).catch(function () { renderReports(); });
+      var res = $("#pf-result");
+      if (res && res.scrollIntoView) setTimeout(function () { res.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60);
+    };
+
+    renderReports();
 
     /* ---- 首页醒目入口 ---- */
     function goDiag() {

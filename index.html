@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f6f5f2">
 <meta name="description" content="凡哥的投资指南 — 纳斯达克 / 黄金 / 债券 定投分析，基于何刚投资方法论，每日更新">
 <title>凡哥的投资指南</title>
-<link rel="stylesheet" href="assets/style.css?v=3">
+<link rel="stylesheet" href="assets/style.css?v=4">
 </head>
 <body>
 
@@ -53,14 +53,16 @@
     </div>
     <div id="pf-shot-tip" class="note" style="margin-top:10px">还没上传截图。<b>点右上 ✕ 可删除单张。</b></div>
     <div class="shot-grid" id="pf-shot-grid"></div>
+    <button class="btn" id="pf-analyze" style="margin-top:12px;padding:15px;font-size:16px;box-shadow:0 6px 18px rgba(138,90,43,.28)">🔍 分析我的持仓 · 生成诊断报告</button>
     <button class="btn" id="pf-shot-copy" style="background:var(--card-2);color:var(--text);border:1px solid var(--line);margin-top:10px;display:none">复制一份给小爪的分析请求</button>
     <div class="note" style="margin-top:10px">
-      图片<b>只存在你手机本地</b>（浏览器 IndexedDB），不上传任何服务器，换设备或清缓存会丢。<br>
-      想让我分析：把图直接发给我，或者点上面的按钮复制一段文字带上它。诊断结论会写进下面的「诊断归档」。
+      ⚠️ <b>这个站是纯静态的，读不出截图里的数字</b>（没有服务器、也没接 OCR）。所以流程是：<br>
+      <b>① 这里上传截图留档</b> → <b>② 下面填一下持仓金额</b>（大概就行）→ <b>③ 点「🔍 分析」立刻出完整报告</b>。<br>
+      想要小爪对着截图做人工深度分析：把图直接发给我，结论会写进下面的「诊断归档」。
     </div>
   </div>
 
-  <div class="sec-title">持仓自测 · 填金额，立刻出结果</div>
+  <div class="sec-title">持仓金额 · 分析的输入</div>
   <div class="card">
     <div class="grid g2">
       <div class="field"><label>债券 / 债基（元）</label><input type="number" id="pf-bond" value="0" inputmode="numeric"></div>
@@ -74,6 +76,9 @@
     <div id="pf-result"></div>
     <div class="note" style="margin-top:10px">数据只存在你手机浏览器里，不会上传。填个大概就行，看的是<b>结构</b>不是精确到分。</div>
   </div>
+
+  <div class="sec-title">我的诊断报告</div>
+  <div id="pf-reports"></div>
 
   <div class="sec-title">小爪看到截图后会查这六项</div>
   <div id="pf-dims"></div>
@@ -196,11 +201,11 @@
   <button data-page="tools"><span class="ti">⚒</span>工具</button>
 </nav>
 
-<script src="data/market.js?v=3"></script>
-<script src="data/assets.js?v=3"></script>
-<script src="data/framework.js?v=3"></script>
-<script src="data/journal.js?v=3"></script>
-<script src="data/portfolio.js?v=3"></script>
-<script src="assets/app.js?v=3"></script>
+<script src="data/market.js?v=4"></script>
+<script src="data/assets.js?v=4"></script>
+<script src="data/framework.js?v=4"></script>
+<script src="data/journal.js?v=4"></script>
+<script src="data/portfolio.js?v=4"></script>
+<script src="assets/app.js?v=4"></script>
 </body>
 </html>
