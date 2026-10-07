@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f6f5f2">
 <meta name="description" content="凡哥的投资指南 — 纳斯达克 / 黄金 / 债券 定投分析，基于何刚投资方法论，每日更新">
 <title>凡哥的投资指南</title>
-<link rel="stylesheet" href="assets/style.css?v=4">
+<link rel="stylesheet" href="assets/style.css?v=5">
 </head>
 <body>
 
@@ -53,6 +53,8 @@
     </div>
     <div id="pf-shot-tip" class="note" style="margin-top:10px">还没上传截图。<b>点右上 ✕ 可删除单张。</b></div>
     <div class="shot-grid" id="pf-shot-grid"></div>
+    <button class="btn" id="pf-ai" style="display:none;background:linear-gradient(135deg,#5b4bd6,#8b7ce8);margin-top:12px;padding:15px;font-size:16px;box-shadow:0 6px 18px rgba(91,75,214,.3)">🤖 AI 读图 · 自动识别并分析</button>
+    <div id="pf-ai-result" style="margin-top:12px"></div>
     <button class="btn" id="pf-analyze" style="margin-top:12px;padding:15px;font-size:16px;box-shadow:0 6px 18px rgba(138,90,43,.28)">🔍 分析我的持仓 · 生成诊断报告</button>
     <button class="btn" id="pf-shot-copy" style="background:var(--card-2);color:var(--text);border:1px solid var(--line);margin-top:10px;display:none">复制一份给小爪的分析请求</button>
     <div class="note" style="margin-top:10px">
@@ -76,6 +78,32 @@
     <div id="pf-result"></div>
     <div class="note" style="margin-top:10px">数据只存在你手机浏览器里，不会上传。填个大概就行，看的是<b>结构</b>不是精确到分。</div>
   </div>
+
+  <div class="sec-title">大模型设置 · 配一次，之后全自动</div>
+  <details class="acc" id="pf-llm-cfg">
+    <summary>⚙️ 接入视觉大模型（用于读图识别持仓）</summary>
+    <div class="body">
+      <div class="field">
+        <label>服务商</label>
+        <select id="llm-provider">
+          <option value="zhipu">智谱 GLM-4V（有免费额度，中文识别好）</option>
+          <option value="qwen">通义千问 VL</option>
+          <option value="openai">OpenAI（GPT-4o mini）</option>
+          <option value="custom">自定义（OpenAI 兼容接口）</option>
+        </select>
+      </div>
+      <div class="field"><label>API Key</label><input type="password" id="llm-key" placeholder="填在这里，只存在你手机本地" autocomplete="off"></div>
+      <div class="field"><label>接口地址</label><input type="text" id="llm-url" placeholder="自动填充，自定义时改"></div>
+      <div class="field"><label>模型名</label><input type="text" id="llm-model" placeholder="自动填充"></div>
+      <button class="btn" id="llm-save">保存并测试连接</button>
+      <div id="llm-status" style="margin-top:10px"></div>
+      <div class="note" style="margin-top:10px">
+        Key <b>只存在你手机浏览器本地</b>，不上传任何服务器，也不会进 GitHub 仓库。<br>
+        拿到 Key 的地方：智谱 <code>open.bigmodel.cn</code>、阿里百炼 <code>bailian.console.aliyun.com</code>、OpenAI <code>platform.openai.com</code>。<br>
+        ⚠️ 接口若报跨域（CORS）错误，说明该服务商不允许浏览器直连——换上面三家之一即可。
+      </div>
+    </div>
+  </details>
 
   <div class="sec-title">我的诊断报告</div>
   <div id="pf-reports"></div>
@@ -201,11 +229,11 @@
   <button data-page="tools"><span class="ti">⚒</span>工具</button>
 </nav>
 
-<script src="data/market.js?v=4"></script>
-<script src="data/assets.js?v=4"></script>
-<script src="data/framework.js?v=4"></script>
-<script src="data/journal.js?v=4"></script>
-<script src="data/portfolio.js?v=4"></script>
-<script src="assets/app.js?v=4"></script>
+<script src="data/market.js?v=5"></script>
+<script src="data/assets.js?v=5"></script>
+<script src="data/framework.js?v=5"></script>
+<script src="data/journal.js?v=5"></script>
+<script src="data/portfolio.js?v=5"></script>
+<script src="assets/app.js?v=5"></script>
 </body>
 </html>
