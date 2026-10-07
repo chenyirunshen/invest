@@ -18,6 +18,8 @@
     b.onclick = function () {
       Array.prototype.forEach.call(document.querySelectorAll(".tabbar button"), function (x) { x.classList.remove("on"); });
       b.classList.add("on");
+      var dot = b.querySelector(".dot-new");
+      if (dot && dot.parentNode) dot.parentNode.removeChild(dot);
       Array.prototype.forEach.call(document.querySelectorAll(".page"), function (p) { p.classList.remove("active"); });
       $("#page-" + b.dataset.page).classList.add("active");
       window.scrollTo(0, 0);
@@ -598,8 +600,8 @@
     $("#lb-close").onclick = function () { $("#lb").hidden = true; };
     $("#lb").onclick = function (e) { if (e.target === $("#lb")) $("#lb").hidden = true; };
 
-    $("#pf-file").onchange = function (e) {
-      var files = Array.prototype.slice.call(e.target.files || []);
+    function handleFiles(files) {
+      files = files || [];
       if (!files.length) return;
       var note = ($("#pf-shot-note").value || "").trim();
       var day = today();
@@ -616,6 +618,54 @@
       }).catch(function (err) {
         tip.textContent = "保存失败：" + err.message;
       });
+    }
+
+    var dz = $("#pf-drop");
+    dz.onclick = function () { $("#pf-file").click(); };
+    dz.onkeydown = function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#pf-file").click(); }
+    };
+    ["dragenter", "dragover"].forEach(function (ev) {
+      dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add("drag"); });
+    });
+    ["dragleave", "dragend"].forEach(function (ev) {
+      dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove("drag"); });
+    });
+    dz.addEventListener("drop", function (e) {
+      e.preventDefault();
+      dz.classList.remove("drag");
+      handleFiles(Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []));
+    });
+
+    $("#pf-file").onchange = function (e) {
+      handleFiles(Array.prototype.slice.call(e.target.files || []));
+    };
+
+    /* ---- 首页醒目入口 ---- */
+    function goDiag() {
+      var b = document.querySelector('.tabbar button[data-page="diag"]');
+      if (b) {
+        var d = b.querySelector(".dot-new");
+        if (d && d.parentNode) d.parentNode.removeChild(d);
+        b.click();
+      }
+      setTimeout(function () {
+        if (dz && dz.scrollIntoView) dz.scrollIntoView({ behavior: "smooth", block: "center" });
+        dz.classList.add("hot");
+        setTimeout(function () { dz.classList.remove("hot"); }, 1400);
+      }, 80);
+    }
+
+    $("#home-cta").innerHTML =
+      '<div class="cta" id="cta-shot" role="button" tabindex="0">' +
+      '<div class="c-icon">📷</div>' +
+      '<div class="c-body"><div class="c-t">上传持仓截图，让小爪诊断</div>' +
+      '<div class="c-s">看结构 · 六项体检 · 压力测试 · 再平衡建议</div></div>' +
+      '<div class="c-go">›</div></div>';
+    var cta = $("#cta-shot");
+    cta.onclick = goDiag;
+    cta.onkeydown = function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goDiag(); }
     };
 
     copyBtn.onclick = function () {
