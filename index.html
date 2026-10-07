@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f6f5f2">
 <meta name="description" content="凡哥的投资指南 — 纳斯达克 / 黄金 / 债券 定投分析，基于何刚投资方法论，每日更新">
 <title>凡哥的投资指南</title>
-<link rel="stylesheet" href="assets/style.css?v=5">
+<link rel="stylesheet" href="assets/style.css?v=6">
 </head>
 <body>
 
@@ -19,7 +19,6 @@
 
 <!-- ================= 今日 ================= -->
 <main class="page active" id="page-home">
-  <div id="home-cta"></div>
   <div id="home-signal"></div>
 
   <div class="sec-title">宏观仪表盘</div>
@@ -34,89 +33,6 @@
   <div class="foot">以上为基于公开信息的结构化分析，仅供自己决策参考，不构成投资建议。</div>
 </main>
 
-<!-- ================= 诊断 ================= -->
-<main class="page" id="page-diag">
-  <div class="sec-title">这个功能怎么用</div>
-  <div class="card" id="pf-howto"></div>
-
-  <div class="sec-title">上传持仓截图</div>
-  <div class="card">
-    <div class="dropzone" id="pf-drop" role="button" tabindex="0">
-      <div class="dz-icon">📷</div>
-      <div class="dz-t">点这里选图 / 拍照</div>
-      <div class="dz-s">支持一次选多张 · 自动压缩存本地 · 不上传服务器</div>
-    </div>
-    <input type="file" id="pf-file" accept="image/*" multiple hidden>
-    <div class="field" style="margin-top:12px">
-      <label>这次的备注（选填）</label>
-      <input type="text" id="pf-shot-note" placeholder="如：10月持仓 · 定投第 3 期">
-    </div>
-    <div id="pf-shot-tip" class="note" style="margin-top:10px">还没上传截图。<b>点右上 ✕ 可删除单张。</b></div>
-    <div class="shot-grid" id="pf-shot-grid"></div>
-    <button class="btn" id="pf-ai" style="display:none;background:linear-gradient(135deg,#5b4bd6,#8b7ce8);margin-top:12px;padding:15px;font-size:16px;box-shadow:0 6px 18px rgba(91,75,214,.3)">🤖 AI 读图 · 自动识别并分析</button>
-    <div id="pf-ai-result" style="margin-top:12px"></div>
-    <button class="btn" id="pf-analyze" style="margin-top:12px;padding:15px;font-size:16px;box-shadow:0 6px 18px rgba(138,90,43,.28)">🔍 分析我的持仓 · 生成诊断报告</button>
-    <button class="btn" id="pf-shot-copy" style="background:var(--card-2);color:var(--text);border:1px solid var(--line);margin-top:10px;display:none">复制一份给小爪的分析请求</button>
-    <div class="note" style="margin-top:10px">
-      ⚠️ <b>这个站是纯静态的，读不出截图里的数字</b>（没有服务器、也没接 OCR）。所以流程是：<br>
-      <b>① 这里上传截图留档</b> → <b>② 下面填一下持仓金额</b>（大概就行）→ <b>③ 点「🔍 分析」立刻出完整报告</b>。<br>
-      想要小爪对着截图做人工深度分析：把图直接发给我，结论会写进下面的「诊断归档」。
-    </div>
-  </div>
-
-  <div class="sec-title">持仓金额 · 分析的输入</div>
-  <div class="card">
-    <div class="grid g2">
-      <div class="field"><label>债券 / 债基（元）</label><input type="number" id="pf-bond" value="0" inputmode="numeric"></div>
-      <div class="field"><label>纳斯达克 QDII / ETF（元）</label><input type="number" id="pf-nas" value="0" inputmode="numeric"></div>
-      <div class="field"><label>黄金 ETF / 积存金（元）</label><input type="number" id="pf-gold" value="0" inputmode="numeric"></div>
-      <div class="field"><label>现金 / 货币基金（元）</label><input type="number" id="pf-cash" value="0" inputmode="numeric"></div>
-      <div class="field"><label>其他（元）</label><input type="number" id="pf-other" value="0" inputmode="numeric"></div>
-      <div class="field"><label>月生活支出（元）</label><input type="number" id="pf-cost" value="5000" inputmode="numeric"></div>
-    </div>
-    <button class="btn" id="pf-run">诊断我的持仓</button>
-    <div id="pf-result"></div>
-    <div class="note" style="margin-top:10px">数据只存在你手机浏览器里，不会上传。填个大概就行，看的是<b>结构</b>不是精确到分。</div>
-  </div>
-
-  <div class="sec-title">大模型设置 · 配一次，之后全自动</div>
-  <details class="acc" id="pf-llm-cfg">
-    <summary>⚙️ 接入视觉大模型（用于读图识别持仓）</summary>
-    <div class="body">
-      <div class="field">
-        <label>服务商</label>
-        <select id="llm-provider">
-          <option value="zhipu">智谱 GLM-4V（有免费额度，中文识别好）</option>
-          <option value="qwen">通义千问 VL</option>
-          <option value="openai">OpenAI（GPT-4o mini）</option>
-          <option value="custom">自定义（OpenAI 兼容接口）</option>
-        </select>
-      </div>
-      <div class="field"><label>API Key</label><input type="password" id="llm-key" placeholder="填在这里，只存在你手机本地" autocomplete="off"></div>
-      <div class="field"><label>接口地址</label><input type="text" id="llm-url" placeholder="自动填充，自定义时改"></div>
-      <div class="field"><label>模型名</label><input type="text" id="llm-model" placeholder="自动填充"></div>
-      <button class="btn" id="llm-save">保存并测试连接</button>
-      <div id="llm-status" style="margin-top:10px"></div>
-      <div class="note" style="margin-top:10px">
-        Key <b>只存在你手机浏览器本地</b>，不上传任何服务器，也不会进 GitHub 仓库。<br>
-        拿到 Key 的地方：智谱 <code>open.bigmodel.cn</code>、阿里百炼 <code>bailian.console.aliyun.com</code>、OpenAI <code>platform.openai.com</code>。<br>
-        ⚠️ 接口若报跨域（CORS）错误，说明该服务商不允许浏览器直连——换上面三家之一即可。
-      </div>
-    </div>
-  </details>
-
-  <div class="sec-title">我的诊断报告</div>
-  <div id="pf-reports"></div>
-
-  <div class="sec-title">小爪看到截图后会查这六项</div>
-  <div id="pf-dims"></div>
-
-  <div class="sec-title">诊断归档</div>
-  <div id="pf-reviews"></div>
-
-  <div class="sec-title">学习路径 · 接下来往哪走</div>
-  <div id="pf-learn"></div>
-</main>
 
 <!-- ================= 标的 ================= -->
 <main class="page" id="page-assets">
@@ -128,6 +44,9 @@
 
   <div class="sec-title">常见坑</div>
   <div class="card" id="pitfall-box"></div>
+
+  <div class="sec-title">持仓自查 · 六个合格线</div>
+  <div id="dims-box"></div>
 </main>
 
 <!-- ================= 方法论 ================= -->
@@ -174,6 +93,9 @@
 
   <div class="sec-title">下一版要补什么</div>
   <div class="card" id="todo-box"></div>
+
+  <div class="sec-title">学习路径 · 接下来往哪走</div>
+  <div id="learn-box"></div>
 </main>
 
 <!-- ================= 工具 ================= -->
@@ -215,25 +137,19 @@
   </div>
 </main>
 
-<div class="lightbox" id="lb" hidden>
-  <img id="lb-img" alt="持仓截图">
-  <button id="lb-close" aria-label="关闭">✕</button>
-</div>
 
 <nav class="tabbar">
   <button class="on" data-page="home"><span class="ti">◎</span>今日</button>
-  <button data-page="diag"><i class="dot-new"></i><span class="ti">⌘</span>诊断</button>
   <button data-page="assets"><span class="ti">◈</span>标的</button>
   <button data-page="framework"><span class="ti">✦</span>方法论</button>
   <button data-page="journal"><span class="ti">✎</span>迭代</button>
   <button data-page="tools"><span class="ti">⚒</span>工具</button>
 </nav>
 
-<script src="data/market.js?v=5"></script>
-<script src="data/assets.js?v=5"></script>
-<script src="data/framework.js?v=5"></script>
-<script src="data/journal.js?v=5"></script>
-<script src="data/portfolio.js?v=5"></script>
-<script src="assets/app.js?v=5"></script>
+<script src="data/market.js?v=6"></script>
+<script src="data/assets.js?v=6"></script>
+<script src="data/framework.js?v=6"></script>
+<script src="data/journal.js?v=6"></script>
+<script src="assets/app.js?v=6"></script>
 </body>
 </html>
