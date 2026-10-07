@@ -500,4 +500,154 @@
     $("#pf-run").onclick = run;
     run();
   })();
+
+  /* ---------- 截图上传（IndexedDB 本地存储） ---------- */
+  (function () {
+    var DB = null;
+
+    function openDB() {
+      return new Promise(function (res, rej) {
+        if (DB) return res(DB);
+        var rq = indexedDB.open("fange-invest", 1);
+        rq.onupgradeneeded = function (e) {
+          var db = e.target.result;
+          if (!db.objectStoreNames.contains("shots")) {
+            db.createObjectStore("shots", { keyPath: "id", autoIncrement: true });
+          }
+        };
+        rq.onsuccess = function (e) { DB = e.target.result; res(DB); };
+        rq.onerror = function (e) { rej(e.target.error); };
+      });
+    }
+
+    function tx(mode, fn) {
+      return openDB().then(function (db) {
+        return new Promise(function (res, rej) {
+          var t = db.transaction("shots", mode);
+          var st = t.objectStore("shots");
+          var out = fn(st);
+          t.oncomplete = function () { res(out && out.result !== undefined ? out.result : out); };
+          t.onerror = function (e) { rej(e.target.error); };
+        });
+      });
+    }
+
+    var all = function () { return tx("readonly", function (s) { return s.getAll(); }); };
+    var put = function (o) { return tx("readwrite", function (s) { return s.add(o); }); };
+    var del = function (id) { return tx("readwrite", function (s) { return s.delete(id); }); };
+
+    function compress(file) {
+      return new Promise(function (res, rej) {
+        var fr = new FileReader();
+        fr.onload = function (e) {
+          var im = new Image();
+          im.onload = function () {
+            var max = 1000, s = Math.min(1, max / Math.max(im.width, im.height));
+            var c = document.createElement("canvas");
+            c.width = Math.round(im.width * s);
+            c.height = Math.round(im.height * s);
+            c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+            res(c.toDataURL("image/jpeg", 0.72));
+          };
+          im.onerror = rej;
+          im.src = e.target.result;
+        };
+        fr.onerror = rej;
+        fr.readAsDataURL(file);
+      });
+    }
+
+    var grid = $("#pf-shot-grid");
+    var tip = $("#pf-shot-tip");
+    var copyBtn = $("#pf-shot-copy");
+
+    function today() {
+      var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; };
+      return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+    }
+
+    function render() {
+      all().then(function (list) {
+        list = (list || []).sort(function (a, b) { return b.id - a.id; });
+        tip.style.display = list.length ? "none" : "block";
+        copyBtn.style.display = list.length ? "block" : "none";
+        grid.innerHTML = list.map(function (s) {
+          return '<div class="shot" data-id="' + s.id + '">' +
+            '<button class="s-del" data-del="' + s.id + '" aria-label="删除">✕</button>' +
+            '<img src="' + s.data + '" alt="持仓截图" data-full="' + s.id + '">' +
+            '<div class="s-meta">' + (s.note || "未备注") + '<span>' + s.date + '</span></div></div>';
+        }).join("");
+        Array.prototype.forEach.call(grid.querySelectorAll("[data-del]"), function (b) {
+          b.onclick = function (e) {
+            e.stopPropagation();
+            del(+b.dataset.del).then(render);
+          };
+        });
+        Array.prototype.forEach.call(grid.querySelectorAll("img[data-full]"), function (im) {
+          im.onclick = function () {
+            $("#lb-img").src = im.src;
+            $("#lb").hidden = false;
+          };
+        });
+      }).catch(function (e) {
+        tip.style.display = "block";
+        tip.textContent = "本地存储不可用：" + e.message;
+      });
+    }
+
+    $("#lb-close").onclick = function () { $("#lb").hidden = true; };
+    $("#lb").onclick = function (e) { if (e.target === $("#lb")) $("#lb").hidden = true; };
+
+    $("#pf-file").onchange = function (e) {
+      var files = Array.prototype.slice.call(e.target.files || []);
+      if (!files.length) return;
+      var note = ($("#pf-shot-note").value || "").trim();
+      var day = today();
+      tip.textContent = "正在处理 " + files.length + " 张…";
+      tip.style.display = "block";
+      Promise.all(files.map(function (f) {
+        return compress(f).then(function (d) {
+          return put({ date: day, note: note, data: d });
+        });
+      })).then(function () {
+        $("#pf-file").value = "";
+        $("#pf-shot-note").value = "";
+        render();
+      }).catch(function (err) {
+        tip.textContent = "保存失败：" + err.message;
+      });
+    };
+
+    copyBtn.onclick = function () {
+      var g = function (id) { return parseFloat($(id).value) || 0; };
+      var txt = "【持仓诊断请求】" + today() + "\n" +
+        "当前持仓（自测）：债券 " + g("#pf-bond") + " / 纳指 " + g("#pf-nas") +
+        " / 黄金 " + g("#pf-gold") + " / 现金 " + g("#pf-cash") + " / 其他 " + g("#pf-other") + " 元\n" +
+        "月生活支出：" + g("#pf-cost") + " 元\n" +
+        "（截图另发，共 " + grid.children.length + " 张）\n\n" +
+        "请按六个维度诊断：① 核心/卫星结构 ② 纳指集中度 ③ 黄金对冲层 " +
+        "④ 溢价与限购 ⑤ 债券久期 ⑥ 现金垫\n" +
+        "并给出：再平衡的精确金额建议、三种情景压力测试、下一步学习重点。";
+      var done = function () {
+        var old = copyBtn.textContent;
+        copyBtn.textContent = "已复制 ✓ 发给小爪时把图一起带上";
+        setTimeout(function () { copyBtn.textContent = old; }, 2500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(done).catch(fallback);
+      } else { fallback(); }
+      function fallback() {
+        var ta = document.createElement("textarea");
+        ta.value = txt;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); done(); } catch (e) { copyBtn.textContent = "复制失败，请手动截图文字"; }
+        document.body.removeChild(ta);
+      }
+    };
+
+    render();
+  })();
 })();

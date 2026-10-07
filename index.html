@@ -38,6 +38,23 @@
   <div class="sec-title">这个功能怎么用</div>
   <div class="card" id="pf-howto"></div>
 
+  <div class="sec-title">上传持仓截图</div>
+  <div class="card">
+    <div class="field">
+      <label>这次的备注（选填）</label>
+      <input type="text" id="pf-shot-note" placeholder="如：10月持仓 · 定投第 3 期">
+    </div>
+    <label class="btn" for="pf-file" style="display:block;text-align:center;margin-bottom:4px">＋ 选图 / 拍照</label>
+    <input type="file" id="pf-file" accept="image/*" multiple hidden>
+    <div id="pf-shot-tip" class="note" style="margin-top:10px">还没上传截图。<b>长按下面的缩略图可以删除。</b></div>
+    <div class="shot-grid" id="pf-shot-grid"></div>
+    <button class="btn" id="pf-shot-copy" style="background:var(--card-2);color:var(--text);border:1px solid var(--line);margin-top:10px;display:none">复制一份给小爪的分析请求</button>
+    <div class="note" style="margin-top:10px">
+      图片<b>只存在你手机本地</b>（浏览器 IndexedDB），不上传任何服务器，换设备或清缓存会丢。<br>
+      想让我分析：把图直接发给我，或者点上面的按钮复制一段文字带上它。诊断结论会写进下面的「诊断归档」。
+    </div>
+  </div>
+
   <div class="sec-title">持仓自测 · 填金额，立刻出结果</div>
   <div class="card">
     <div class="grid g2">
@@ -159,6 +176,11 @@
     </ul>
   </div>
 </main>
+
+<div class="lightbox" id="lb" hidden>
+  <img id="lb-img" alt="持仓截图">
+  <button id="lb-close" aria-label="关闭">✕</button>
+</div>
 
 <nav class="tabbar">
   <button class="on" data-page="home"><span class="ti">◎</span>今日</button>

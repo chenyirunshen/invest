@@ -307,6 +307,37 @@ input:focus, select:focus { outline: 2px solid var(--brand); outline-offset: -1p
 .foot { text-align: center; font-size: 11px; color: var(--text-3); padding: 8px 20px 30px; line-height: 1.7; }
 svg.chart { display: block; width: 100%; height: auto; }
 
+/* ---------- 截图上传 ---------- */
+.shot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.shot-grid:empty { display: none; }
+.shot {
+  position: relative; border-radius: 10px; overflow: hidden;
+  border: 1px solid var(--line); background: var(--card-2); cursor: pointer;
+}
+.shot img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
+.shot .s-meta {
+  font-size: 10px; color: var(--text-2); padding: 4px 5px; line-height: 1.35;
+  border-top: 1px solid var(--line); word-break: break-all;
+}
+.shot .s-meta span { color: var(--text-3); display: block; }
+.shot .s-del {
+  position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%;
+  border: none; background: rgba(0, 0, 0, .55); color: #fff; font-size: 12px; line-height: 1;
+  cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center;
+}
+
+.lightbox {
+  position: fixed; inset: 0; z-index: 200; background: rgba(0, 0, 0, .92);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.lightbox[hidden] { display: none; }
+.lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+.lightbox button {
+  position: absolute; top: max(14px, env(safe-area-inset-top)); right: 14px;
+  width: 36px; height: 36px; border-radius: 50%; border: none;
+  background: rgba(255, 255, 255, .16); color: #fff; font-size: 16px; cursor: pointer;
+}
+
 /* ---------- 诊断页 ---------- */
 .badge {
   display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700;
